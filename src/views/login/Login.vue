@@ -129,7 +129,7 @@ export default {
                     //清除uuid
                     localStorage.removeItem("edb-capthca-uuid")
                     //保存token
-                    localStorage.setItem("ed-authorization-token",res.token)
+                    localStorage.setItem("edb-authorization-token",res.token)
                     //跳转首页
                     this.$router.push("/");
                 } else {

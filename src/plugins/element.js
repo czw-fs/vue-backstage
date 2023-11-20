@@ -1,12 +1,13 @@
 import Vue from 'vue'
-import { Button,Input,Form, FormItem ,Message } from 'element-ui'
-//全局引入element样式
-// import 'element-ui/lib/theme-chalk/index.css'
+import { Button,Input,Form,FormItem,Message,MenuItemGroup,Menu,MenuItem,Submenu } from 'element-ui'
 
-// 按需应用element-ui组件
+Vue.prototype.$message = Message;
+// 注册
 Vue.use(Button)
 Vue.use(Input)
 Vue.use(Form)
 Vue.use(FormItem)
-
-Vue.prototype.$message = Message
+Vue.use(MenuItemGroup)
+Vue.use(Menu)
+Vue.use(MenuItem)
+Vue.use(Submenu)

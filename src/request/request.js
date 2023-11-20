@@ -9,7 +9,13 @@ const instance = axios.create({
 
 //请求拦截器
 instance.interceptors.request.use(config => {
-    return config;
+
+    //有token且访问的不是登录页面，则发送请求时，将token放到请求头中
+    const token = localStorage.getItem("edb-authorization-token")
+    if(token && !config.url.endsWith("/login") && !config.url.endsWith("/captchaImage") ){
+        config.headers["Authorization"] = "Bearer " +token
+    }
+    return config
 },err => {
     return Promise.reject(err);
 })
