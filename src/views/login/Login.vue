@@ -86,40 +86,52 @@ export default {
     },
 
     methods: {
-        //获取验证码
-        getCaptchacode(){
-            getCatpchaCodeApi()
-            .then(res=>{
-                if(res.code === 200){
-                    this.captchaSrc = 'data:image/gif;base64,' + res.img;
-                    //保存uuid，传递给后端，座位登录凭证
-                    localStorage.setItem("edb-capthca-uuid",res.uuid)
-                }else{
-                    this.$message.error(res.msg);
-                }
-            })
+        //获取验证码图片
+        async getCaptchacode(){
+            //发送请求
+            let res = await getCatpchaCodeApi()
+
+            //响应拦截器返回false，说明后端数据异常，终止方法
+            if(res == false){
+                return;
+            }
+            
+            //获取base64编码的验证码图片字符串
+            this.captchaSrc = 'data:image/gif;base64,' + res.img;
+            //保存uuid，传递给后端，座位登录凭证
+            localStorage.setItem("edb-capthca-uuid",res.uuid)
         },
         //提交表单的验证
         submitForm(formName) {
-            this.$refs[formName].validate((valid) => {
+            //进行前段自定义的表单验证
+            this.$refs[formName].validate(async (valid) => {
                 if (valid) {
                     //验证通过
-                    loginApi({
+                    //发起登录请求
+                    let res = await loginApi({
                         username: this.ruleForm.username,
                         password: this.ruleForm.password,
                         code: this.ruleForm.captchacode,
                         uuid: localStorage.getItem("edb-capthca-uuid")
-                    }).then(res => {
-                        if(res.code == 200){
-                            console.log(res)
-                        }else{
-                            //验证码失效提示
-                            this.$message({//弹出消息
-                                message: res.msg,
-                                type: 'warning'
-                            });
-                        }
                     })
+                  
+                    //响应拦截器返回false，说明后端数据异常，终止方法
+                    if(res == false){
+                        return;
+                    }
+
+                    //提示用户登录成功
+                    this.$message({//弹出消息
+                        message: res.msg,
+                        type: 'success'
+                    });
+
+                    //清除uuid
+                    localStorage.removeItem("edb-capthca-uuid")
+                    //保存token
+                    localStorage.setItem("ed-authorization-token",res.token)
+                    //跳转首页
+                    this.$router.push("/");
                 } else {
                     //验证失败
                     this.$message({//弹出消息
