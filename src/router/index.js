@@ -11,6 +11,7 @@ const routes = [
     name: 'mainlayout',
     component: () => import(/* webpackChunkName: "mainlayout" */ '../views/layout/MainLayout.vue'),
     redirect:"/home",
+    //子路由动态生成
     // children:[
       // {
       //   path:"/home",
@@ -42,6 +43,10 @@ const routes = [
     path: '/login',
     name: 'login',
     component: () => import(/* webpackChunkName: "login" */ '../views/login/Login.vue')
+  },
+  {
+    path: '*',
+    component: () => import(/* webpackChunkName: "404" */ '../views/404.vue')
   }
 ]
 
@@ -112,7 +117,10 @@ router.beforeEach(async (to,from,next)=>{
           let ret = item.children.map(sitem=>{
             return {
               path:item.path+"/"+sitem.path,
-              component: () => import(`../views${item.path}/${sitem.name}.vue`)
+              component: () => import(`../views${item.path}/${sitem.name}.vue`),
+              meta:{
+                titles: [item.meta.title,sitem.meta.title]
+              }
             }
           })
           newChildrenRoutes = [...newChildrenRoutes,...ret]

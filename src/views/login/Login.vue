@@ -24,130 +24,119 @@
 </template>
 
 <script>
-import {validateUsername} from "../../utils/validate"
-import {getCatpchaCodeApi,loginApi} from "../../request/api"
+import {validateUsername} from "@/utils/validate"
+import {getCatpchaCodeApi, LoginApi} from "@/request/api"
+import { mapMutations,mapState,mapActions } from "vuex"
 export default {
-    name: 'V2EdbManagementLogin',
-
     data () {
         return {
-            ruleForm: {
-                //用户名
-                username:'qdtest1',
-                //密码
-                password:'123456',
-                //验证码
-                captchacode:'888888'
+
+            ruleForm:{
+                username:"qdtest1",
+                password:"123456",
+                captchacode:"888888"
             },
             rules:{
                 username:[
                     {
-                        required: true, //必填项
-                        message: '用户名不能为空', //没写的提示信息
-                        trigger:'blur' // 失去焦点时触发
+                        required:true, // 必填项
+                        message:"用户名不能为空！", // 提示语
+                        trigger:"blur"
                     },
-                    //自定义校验规则
-                    {
-                        validator:  validateUsername,
-                        trigger: 'blur' 
-                    }
+                    // 自定义校验的写法
+                    { validator: validateUsername, trigger: 'blur' }
                 ],
                 password:[
                     {
-                        required: true, //必填项
-                        message: '密码不能为空', //没写的提示信息
-                        trigger:'blur' // 失去焦点时触发
+                        required:true, // 必填项
+                        message:"密码不能为空！", // 提示语
+                        trigger:"blur"
                     }
                 ],
                 captchacode:[
                     {
-                        required: true, //必填项
-                        message: '密码不能为空', //没写的提示信息
-                        trigger:'blur' // 失去焦点时触发
+                        required:true, // 必填项
+                        message:"验证码不能为空！", // 提示语
+                        trigger:"blur"
                     }
                 ]
             },
-            //base64 加密后的图形验证码
-            captchaSrc:''
-        };
-
+            // 图片验证码路径
+            captchaSrc:""
+        }
     },
-    created(){
-        //获取验证码
-        getCatpchaCodeApi().then(res=>{
-            if(res.code === 200){
-                this.captchaSrc = 'data:image/gif;base64,' + res.img;
-                //保存uuid，传递给后端，座位登录凭证
-                localStorage.setItem("edb-capthca-uuid",res.uuid)
-            }else{
-                this.$message.error(res.msg);
-            }
+    computed:{
+        ...mapState({
+            menuData:state=>state.userMenuData.menuData
         })
     },
-
-    methods: {
-        //获取验证码图片
+    created(){
+        // 验证码请求
+        this.getCaptchacode();
+        // 清除Vuex，menuData数据
+        this.changeMenuData([]);
+        console.log(this.menuData);
+    },
+    methods:{
+        ...mapMutations({
+            changeMenuData:"userMenuData/changeMenuData",
+        }),
+        ...mapActions({
+            asyncChangeUserInfo:"userInfo/asyncChangeUserInfo"
+        }),
         async getCaptchacode(){
-            //发送请求
-            let res = await getCatpchaCodeApi()
-
-            //响应拦截器返回false，说明后端数据异常，终止方法
-            if(res == false){
-                return;
-            }
             
-            //获取base64编码的验证码图片字符串
-            this.captchaSrc = 'data:image/gif;base64,' + res.img;
-            //保存uuid，传递给后端，座位登录凭证
-            localStorage.setItem("edb-capthca-uuid",res.uuid)
+            let res = await getCatpchaCodeApi();
+              
+            if(!res)return;
+            // 展示验证码图片
+            this.captchaSrc = "data:image/gif;base64," + res.img;
+            // 保存uuid，给到登录时候作为参数传过去后端
+            localStorage.setItem("edb-captcha-uuid",res.uuid)
+       
+       
         },
-        //提交表单的验证
         submitForm(formName) {
-            //进行前段自定义的表单验证
             this.$refs[formName].validate(async (valid) => {
                 if (valid) {
-                    //验证通过
-                    //发起登录请求
-                    let res = await loginApi({
-                        username: this.ruleForm.username,
-                        password: this.ruleForm.password,
-                        code: this.ruleForm.captchacode,
-                        uuid: localStorage.getItem("edb-capthca-uuid")
+                    // 校验通过，走这里的代码
+                    // 发起登录请求
+                    let res = await LoginApi({
+                        username:this.ruleForm.username,
+                        password:this.ruleForm.password,
+                        code:this.ruleForm.captchacode,
+                        uuid:localStorage.getItem("edb-captcha-uuid")
                     })
-                  
-                    //响应拦截器返回false，说明后端数据异常，终止方法
-                    if(res == false){
-                        return;
-                    }
-
-                    //提示用户登录成功
-                    this.$message({//弹出消息
-                        message: res.msg,
-                        type: 'success'
-                    });
-
-                    //清除uuid
-                    localStorage.removeItem("edb-capthca-uuid")
-                    //保存token
+                    if(!res)return;
+                    // 提示用户登录成功
+                    this.$message({message:"登录成功！",type:"success"});
+                    // 清除uuid
+                    localStorage.removeItem("edb-captcha-uuid")
+                    // 保存token
                     localStorage.setItem("edb-authorization-token",res.token)
-                    //跳转首页
-                    this.$router.push("/");
+                    // 跳转首页
+                    this.$router.push("/") 
+                    console.log(res);
+
+                    this.asyncChangeUserInfo();
+                    
+                
                 } else {
-                    //验证失败
-                    this.$message({//弹出消息
-                        message: '用户名或密码错误',
+                    // 校验没有通过，执行这里的代码
+                    this.$message({
+                        message: '请输入正确的信息后在进行提交！',
                         type: 'warning'
                     });
+                    console.log('error submit!!');
                     return false;
                 }
             });
-      },
+        },
     }
-
 }
 </script>
-
-<style lang="less" scoped>
+ 
+<style lang = "less" scoped>
 .login-page{
     width: 100%;
     height: 100%;
