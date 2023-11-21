@@ -28,6 +28,8 @@ instance.interceptors.response.use(res => {
             message: res_data.msg || "网络请求失败",
             type: 'error'
         });
+
+        
         return false;
     }
     //返回请求数据

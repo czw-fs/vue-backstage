@@ -9,6 +9,8 @@ import store from './store'
 //引入element-ui
 import './plugins/element.js'
 
+import "@/assets/icons/index"
+
 Vue.config.productionTip = false
 
 new Vue({
