@@ -22,15 +22,21 @@ instance.interceptors.request.use(config => {
 
 //响应拦截器
 instance.interceptors.response.use(res => {
-    let res_data = res.data;
-    if(res_data.code != 200){
-        Message({//弹出消息
-            message: res_data.msg || "网络请求失败",
-            type: 'error'
-        });
+    let res_data = res.data
 
-        
-        return false;
+    if(res_data.code!=200){
+        Message.error(res_data.msg || '网络请求错误');
+        // 只要不是200，都会走这里
+        if(res_data.code==401){
+            // 401一般表示token过期或者没有带
+            localStorage.removeItem("edb-authorization-token");
+            router.push("/login")
+        }
+
+
+
+        // 这里return不是为了结束函数，实际上是把return值传到组件中的res
+        return false
     }
     //返回请求数据
     return res.data;

@@ -2,6 +2,7 @@ const { defineConfig } = require('@vue/cli-service');
 const path = require("path");
 module.exports = defineConfig({
   transpileDependencies: true,
+  lintOnSave: false,
   chainWebpack:config=>{
     // svg图标加载
     config.module

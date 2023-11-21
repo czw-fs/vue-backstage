@@ -9,7 +9,26 @@ const routes = [
   {
     path: '/',
     name: 'mainlayout',
-    component: () => import(/* webpackChunkName: "mainlayout" */ '../views/layout/MainLayout.vue')
+    component: () => import(/* webpackChunkName: "mainlayout" */ '../views/layout/MainLayout.vue'),
+    redirect:"/home",
+    // children:[
+      // {
+      //   path:"/home",
+      //   component: () => import(/* webpackChunkName: "home" */ '../views/HomeView.vue')
+      // },
+      // {
+      //   path:"/customer/customer",
+      //   component: () => import(/* webpackChunkName: "customer" */ '../views/customer/Customer.vue')
+      // },
+      // {
+      //   path:"/customer/visit",
+      //   component: () => import(/* webpackChunkName: "visit" */ '../views/customer/Visit.vue')
+      // },
+      // {
+      //   path:"/flow/definition",
+      //   component: () => import(/* webpackChunkName: "definition" */ '../views/flow/Definition.vue')
+      // }
+    // ]
   },
   {
     path: '/about',
@@ -47,54 +66,78 @@ router.beforeEach(async (to,from,next)=>{
     return
   }
 
-
-
-
-  
-
+  // if(token && vuex中menuData为0){
   if(token && store.state.userMenuData.menuData.length==0){
-    // 获取用户的菜单数据
-    let GetUserRoutersApiRes = await  GetUserRoutersApi();
-    console.log("用户菜单数据GetUserRoutersApiRes为：",GetUserRoutersApiRes);
-    if(!GetUserRoutersApiRes)return;
-    // 请求到的GetUserRoutersApiRes这个数据，和我们要的menuData，结构上不太一样
-    // 所以就需要通过它GetUserRoutersApiRes，来生成我们自己想要的menuData。
-    let newUserMenuData = [{title: "首页",path:"/",icon: "dashboard",}]
-    let ret = GetUserRoutersApiRes.data.map(item=>{
-      if(item.children){
-        return {
+      // 获取用户的菜单数据
+      let GetUserRoutersApiRes = await  GetUserRoutersApi();
+      console.log("用户菜单数据GetUserRoutersApiRes为：",GetUserRoutersApiRes);
+      if(!GetUserRoutersApiRes)return;
+      // 请求到的GetUserRoutersApiRes这个数据，和我们要的menuData，结构上不太一样
+      // 所以就需要通过它GetUserRoutersApiRes，来生成我们自己想要的menuData。
+      let newUserMenuData = [{title: "首页",path:"/",icon: "dashboard",}]
+      let ret = GetUserRoutersApiRes.data.map(item=>{
+        if(item.children){
+          return {
+              title: item.meta.title,
+              icon: item.meta.icon,
+              path: item.path,
+              children: item.children.map(sitem=>{
+                return{
+                  title:sitem.meta.title,
+                  path:item.path+"/"+sitem.path
+                }
+              })
+          }  
+        }else{
+          return {
             title: item.meta.title,
-            icon: item.meta.icon,
             path: item.path,
-            children: item.children.map(sitem=>{
-              return{
-                title:sitem.meta.title,
-                path:item.path+"/"+sitem.path
-              }
-            })
-        }  
-      }else{
-        return {
-          title: item.meta.title,
-          path: item.path,
-          icon: item.meta.icon,
+            icon: item.meta.icon,
+          }
         }
-      }
-      
-    })
-    newUserMenuData = [...newUserMenuData,...ret];
-    // store.commit("文件夹名称/方法名", 要传的参数)
-    // this.$store 这个是组件里面的写法
-    store.commit("userMenuData/changeMenuData",newUserMenuData)
+        
+      })
+      newUserMenuData = [...newUserMenuData,...ret];
+      // store.commit("文件夹名称/方法名", 要传的参数)
+      // this.$store 这个是组件里面的写法
+      store.commit("userMenuData/changeMenuData",newUserMenuData)
+      // 以上----生成菜单数据
+      // 以下----生成用户可以访问的路由数据
+      let newChildrenRoutes=[{
+        path:"/home",
+        component: () => import('../views/HomeView.vue')
+      }]
+      GetUserRoutersApiRes.data.forEach(item=>{
+
+          let ret = item.children.map(sitem=>{
+            return {
+              path:item.path+"/"+sitem.path,
+              component: () => import(`../views${item.path}/${sitem.name}.vue`)
+            }
+          })
+          newChildrenRoutes = [...newChildrenRoutes,...ret]
+
+      });
+
+      console.log(newChildrenRoutes);
+
+      // 要把这个生成好的数组添加到mainlayout路由里面的children，做为子路由
+      // router.addRoute(父路由名称，单个子路由对象);
+      newChildrenRoutes.forEach(item=>{
+        router.addRoute("mainlayout",item); 
+      });
+
+      // 这个to.path要写. 
+      // 如果直接next()，路由还没有完整，还是个空的。它不确定路由里面有没有这个路径。
+      // 加了to.path之后，会重新走一遍路由守卫，此时路由添加完毕，可以检查出用户能不能访问这个路径
+      next(to.path);
+      return
+
   }
-
-
-
-
-
-
-
   
+
+
+
   next()  // 放行
 })
 // router.beforeEach((to,from,next)=>{
@@ -116,5 +159,8 @@ router.beforeEach(async (to,from,next)=>{
 // })
 
 
-
+const originalPush = VueRouter.prototype.push;
+VueRouter.prototype.push = function(location) {
+  return originalPush.call(this, location).catch(err => {})
+};
 export default router
